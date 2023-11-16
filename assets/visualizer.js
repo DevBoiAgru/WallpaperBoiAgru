@@ -1,0 +1,138 @@
+let canvas = document.getElementById("visualizer-canvas");
+let max_height, startPos, vizWidth, midY;
+
+let glob = { bloom: true, bloomRadius: 3 };
+let backgroundColor = "rgba(0,0,0,0)";
+let linesColor = "rgb(255,255,255)";
+let square = true;
+let barwidth = 3;
+
+let ctx = canvas.getContext("2d");
+let gradient;
+
+function setSize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  max_height = window.innerHeight * 0.5;
+  startPos = window.innerWidth * 0.1;
+
+  vizWidth = window.innerWidth * 0.8 * barwidth;
+  midY = canvas.height - canvas.height / 4;
+
+  gradient = ctx.createLinearGradient(0,midY, 0, max_height);
+  gradient.addColorStop(0, backgroundColor);
+  gradient.addColorStop(1, linesColor);
+
+}
+
+window.onload = () => {
+  setSize();
+};
+
+window.onresize = () => {
+  setSize();
+};
+
+function livelyPropertyListener(name, val)
+{
+  switch(name) {
+    case "lineColor":
+      var color = hexToRgb(val);
+      linesColor=`rgb(${color.r},${color.g},${color.b})`;
+      gradient = ctx.createLinearGradient(0,midY, 0, max_height);
+      gradient.addColorStop(0, backgroundColor);
+      gradient.addColorStop(1, linesColor);
+      break;
+  case "backgroundColor":
+      var color = hexToRgb(val);
+      backgroundColor = `rgb(${color.r},${color.g},${color.b})`;
+        gradient = ctx.createLinearGradient(0,midY, 0, max_height);
+      gradient.addColorStop(0, backgroundColor);
+      gradient.addColorStop(1, linesColor);
+      break;   
+    case "square":
+      square = val;
+      break;     
+  }
+}
+
+let bass = 0;
+let audioIntensity = 0;
+let amplifiedAudioIntensity = 0;
+let visualizerCanvas = document.getElementById("visualizer-canvas");
+
+var lastLoop = new Date();
+
+function livelyAudioListener(audioArray) 
+{
+  // var thisLoop = new Date();               // FPS Calculation
+  // var fps = 1000 / (thisLoop - lastLoop);
+
+  maxVal = 1;
+  for (var x of audioArray) {
+    if (x > maxVal) maxVal = x;
+  }
+
+  
+  // Calculate audio intensity and set the visualizer opacity
+  for (let i = 0; i <= 20; i++) bass += audioArray[i] * 2;
+  bass /= 40 * 2 * 0.1;
+  audioIntensity -= 0.1;
+  audioIntensity = (Math.floor(bass * 0.5 * 5) * 10) / 100;
+  if (audioIntensity < 0) audioIntensity = 0;
+  if (audioIntensity > 1) audioIntensity = 1;
+  amplifiedAudioIntensity = Math.pow(audioIntensity, 0.1); // Second number (0.3 by default) amplifies the intensity. i.e, less
+                                                           // loud sounds also result in a higher intensity.
+    visualizerCanvas.style.setProperty("--visopacity", amplifiedAudioIntensity * 100 + "%" );
+                                                          
+  const offSet = vizWidth / audioArray.length;
+  const arrMid = audioArray.length / 2;
+  ctx.fillStyle = backgroundColor;
+  
+  ctx.beginPath();
+  ctx.lineJoin = "round";
+  ctx.moveTo(startPos - offSet * 3, midY);
+  ctx.lineTo(startPos, midY);
+  let posInLine = -1;
+  for (var x = 0; x < audioArray.length; x+=barwidth) {
+    posInLine++;
+    ctx.lineTo(
+      startPos + offSet * posInLine,
+      midY - (audioArray[x] / maxVal) * max_height
+      );
+      if (square)
+      ctx.lineTo(
+        startPos + offSet * (posInLine + 1),
+        midY - (audioArray[x] / maxVal) * max_height
+        );
+      }
+      ctx.lineTo(startPos + offSet * (posInLine + (square ? 1 : 0)), midY);
+  ctx.lineTo(startPos + offSet * (posInLine + (square ? 4 : 3)), midY);
+  
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = gradient;
+  ctx.fill();
+  renderLine(linesColor);
+
+  // document.getElementById("debug").innerHTML = Math.floor(fps) + " FPS";
+  // lastLoop = thisLoop; // Fps calculation
+}
+
+function renderLine(color) {
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = color;
+  if (glob.bloom) {
+    ctx.shadowBlur = glob.bloomRadius;
+    ctx.shadowColor = color;
+  }
+  ctx.stroke();
+}
+
+function hexToRgb(hex) {
+  var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16)
+  } : null;
+}

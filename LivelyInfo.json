@@ -1,0 +1,14 @@
+{
+  "AppVersion": "0.6.9.0",
+  "Title": "DevBoiWallpaper",
+  "Thumbnail": "assets/null.gif",
+  "Preview": "",
+  "Desc": "WallpaperBoiAgru",
+  "Author": "DevBoiAgru",
+  "License": null,
+  "Contact": null,
+  "Type": 1,
+  "FileName": "index.html",
+  "Arguments": "--audio --system-nowplaying",
+  "IsAbsolutePath": false
+}
